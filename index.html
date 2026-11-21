@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173b32"><link rel="manifest" href="manifest.webmanifest">
+<title>My Business Hisab</title>
+<style>
+:root{--green:#173b32;--light:#eef5f1;--red:#b74646;--ink:#17221d;--muted:#68756e}
+*{box-sizing:border-box}body{margin:0;background:#f4f6f5;color:var(--ink);font:15px system-ui,-apple-system,sans-serif}
+header{background:var(--green);color:white;padding:20px 16px 24px}header h1{font-size:22px;margin:0 0 4px}header p{margin:0;color:#d2e3da;font-size:13px}
+main{max-width:760px;margin:auto;padding:14px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:-6px}
+.card{background:white;border-radius:14px;padding:14px;box-shadow:0 2px 10px #15251b0d}.card small{color:var(--muted)}.amount{font-size:21px;font-weight:750;margin-top:5px;overflow-wrap:anywhere}.income{color:#16804e}.expense{color:#bb4141}.profit{color:#173b32}
+section{background:white;border-radius:14px;padding:16px;margin:14px 0;box-shadow:0 2px 10px #15251b0d}
+h2{font-size:17px;margin:0 0 12px}label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #d7dfda;border-radius:9px;background:white;font:inherit;color:var(--ink)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tabs{display:flex;gap:8px}.tabs button{flex:1}
+button{border:0;border-radius:9px;padding:11px 13px;font:600 14px system-ui;cursor:pointer;background:var(--green);color:white}
+button.secondary{background:#e9efeb;color:var(--green)}button.danger{background:#faeaea;color:#a42e2e}
+button:active{opacity:.8}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1}
+.entry{border-top:1px solid #edf0ee;padding:12px 0;display:flex;justify-content:space-between;gap:10px}.entry:first-child{border-top:0}.entry strong{display:block}.entry small{color:var(--muted)}.entry .right{text-align:right;white-space:nowrap;font-weight:700}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}.empty{color:var(--muted);text-align:center;padding:20px 0}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+@media(max-width:420px){.amount{font-size:18px}.row{grid-template-columns:1fr}}
+@media print{body{background:white}header{background:white;color:black;padding:0 0 12px}header p{color:#444}main{padding:0;max-width:none}section{box-shadow:none;border:1px solid #ddd;break-inside:avoid}.no-print{display:none!important}.cards{margin:0}.card{box-shadow:none;border:1px solid #ddd}.entry{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><h1>My Business Hisab</h1><p>आपका निजी हिसाब-किताब • डेटा इसी डिवाइस में सेव होता है</p></header>
+<main>
+<div class="cards">
+ <div class="card"><small>कुल Credit / जमा</small><div class="amount income" id="totalIn">₹0</div></div>
+ <div class="card"><small>कुल Debit / खर्च</small><div class="amount expense" id="totalOut">₹0</div></div>
+ <div class="card"><small>Profit / Loss</small><div class="amount profit" id="net">₹0</div></div>
+ <div class="card"><small>कुल एंट्री</small><div class="amount" id="count">0</div></div>
+</div>
+<section class="no-print">
+<h2>नई एंट्री जोड़ें</h2>
+<div class="tabs">
+<button type="button" id="creditTab" onclick="setType('credit')">Credit / जमा</button>
+<button type="button" class="secondary" id="debitTab" onclick="setType('debit')">Debit / खर्च</button>
+</div>
+<label>रकम (₹)</label><input id="amount" type="number" min="0.01" step="0.01" placeholder="जैसे 500">
+<div class="row">
+ <div><label>तारीख</label><input id="date" type="date"></div>
+ <div><label>कैटेगरी</label><select id="category"><option>बिक्री / आमदनी</option><option>नकद जमा</option><option>अन्य आमदनी</option><option>खरीदारी</option><option>किराया</option><option>बिजली / बिल</option><option>यात्रा</option><option>अन्य खर्च</option></select></div>
+</div>
+<label>विवरण (वैकल्पिक)</label><input id="note" maxlength="100" placeholder="किसलिए पैसे आए या खर्च हुए?">
+<div class="actions"><button onclick="addEntry()">एंट्री सेव करें</button></div>
+<p class="note">ध्यान दें: Credit में आमदनी/जमा और Debit में खर्च दर्ज करें। Profit/Loss = कुल Credit − कुल Debit.</p>
+</section>
+<section>
+<h2>रिपोर्ट और हिसाब</h2>
+<div class="filters no-print">
+ <div><label>रिपोर्ट</label><select id="period" onchange="render()"><option value="all">सभी एंट्री</option><option value="day">एक दिन</option><option value="month">एक महीना</option></select></div>
+ <div><label>तारीख / महीना</label><input type="date" id="filterDate" onchange="render()"></div>
+</div>
+<div class="cards" style="margin:12px 0">
+ <div class="card"><small>चुनी रिपोर्ट की Credit</small><div class="amount income" id="fIn">₹0</div></div>
+ <div class="card"><small>चुनी रिपोर्ट की Debit</small><div class="amount expense" id="fOut">₹0</div></div>
+ <div class="card"><small>चुनी रिपोर्ट का Profit/Loss</small><div class="amount profit" id="fNet">₹0</div></div>
+ <div class="card"><small>रिपोर्ट एंट्री</small><div class="amount" id="fCount">0</div></div>
+</div>
+<div class="actions no-print">
+<button onclick="window.print()">PDF / प्रिंट सेव करें</button>
+<button class="secondary" onclick="exportCSV()">Excel/CSV डाउनलोड</button>
+</div>
+<div id="entries"></div>
+</section>
+<section class="no-print">
+<h2>डेटा की सुरक्षा</h2>
+<p class="note">एंट्री आपके इसी ब्राउज़र/मोबाइल में रहती हैं। ब्राउज़र का डेटा या ऐप डेटा साफ करने पर हिसाब मिट सकता है। समय-समय पर CSV डाउनलोड करके बैकअप रखें।</p>
+<div class="actions"><button class="secondary" onclick="exportBackup()">बैकअप डाउनलोड</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">बैकअप वापस डालें</button><input id="restoreFile" type="file" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)"></div>
+</section>
+</main>
+<script>
+const KEY='myBusinessHisab_v1';let entries=[];let currentType='credit';
+const DB_NAME='MyBusinessHisabDB', STORE='records';
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>req.result.createObjectStore(STORE);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+async function loadSaved(){try{const db=await openDB();const value=await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly');const r=tx.objectStore(STORE).get(KEY);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});if(Array.isArray(value))entries=value;else{try{const old=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(old)){entries=old;await persist();}}catch(e){entries=[]}}}catch(e){try{entries=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(entries))entries=[]}catch(_){entries=[]}alert('स्थानीय डेटाबेस उपलब्ध नहीं हुआ। कृपया बैकअप रखें।')}render();}
+async function persist(){try{const db=await openDB();await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(entries,KEY);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});try{localStorage.setItem(KEY,JSON.stringify(entries))}catch(e){}}catch(e){try{localStorage.setItem(KEY,JSON.stringify(entries))}catch(_){alert('डेटा सेव नहीं हो पाया। तुरंत बैकअप डाउनलोड करें।')}}}
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+function today(){let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+$('date').value=today();$('filterDate').value=today();
+function save(){return persist()}
+function setType(t){currentType=t;$('creditTab').className=t==='credit'?'':'secondary';$('debitTab').className=t==='debit'?'':'secondary'}
+function addEntry(){
+ const amount=Number($('amount').value);if(!Number.isFinite(amount)||amount<=0){alert('कृपया सही रकम डालें।');return}
+ const date=$('date').value;if(!date){alert('तारीख चुनें।');return}
+ entries.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:currentType,amount,date,category:$('category').value,note:$('note').value.trim()});
+ save().then(()=>render());$('amount').value='';$('note').value='';
+}
+function sums(list){let inc=list.filter(x=>x.type==='credit').reduce((a,x)=>a+x.amount,0),out=list.filter(x=>x.type==='debit').reduce((a,x)=>a+x.amount,0);return {inc,out,net:inc-out}}
+function render(){
+ let all=sums(entries);$('totalIn').textContent=money(all.inc);$('totalOut').textContent=money(all.out);$('net').textContent=(all.net<0?'-':'')+money(Math.abs(all.net));$('net').className='amount '+(all.net<0?'expense':'profit');$('count').textContent=entries.length;
+ const p=$('period').value,d=$('filterDate').value;
+ let list=entries.filter(x=>p==='all'||(p==='day'?x.date===d:x.date.slice(0,7)===(d||today()).slice(0,7)));
+ let s=sums(list);$('fIn').textContent=money(s.inc);$('fOut').textContent=money(s.out);$('fNet').textContent=(s.net<0?'-':'')+money(Math.abs(s.net));$('fNet').className='amount '+(s.net<0?'expense':'profit');$('fCount').textContent=list.length;
+ $('entries').innerHTML=list.length?list.map(x=>`<div class="entry"><div><strong>${esc(x.category)}</strong><small>${esc(x.date)}${x.note?' • '+esc(x.note):''}</small></div><div class="right ${x.type==='credit'?'income':'expense'}">${x.type==='credit'?'+':'−'}${money(x.amount)}<br><button class="danger no-print" style="padding:5px 8px;margin-top:5px" onclick="deleteEntry('${x.id}')">हटाएँ</button></div></div>`).join(''):'<div class="empty">इस रिपोर्ट में अभी कोई एंट्री नहीं है।</div>';
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function deleteEntry(id){if(confirm('क्या यह एंट्री हटानी है?')){entries=entries.filter(x=>x.id!==id);save().then(()=>render())}}
+function exportCSV(){let rows=[['Date','Type','Category','Amount','Note'],...entries.map(x=>[x.date,x.type,x.category,x.amount,x.note])];let csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('business-hisab.csv',csv,'text/csv;charset=utf-8')}
+function exportBackup(){download('business-hisab-backup.json',JSON.stringify(entries,null,2),'application/json')}
+function download(name,data,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([data],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function restoreBackup(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let v=JSON.parse(r.result);if(!Array.isArray(v)||!v.every(x=>x.type&&Number(x.amount)>0&&x.date))throw 0;if(confirm('मौजूदा हिसाब बदलकर बैकअप लोड करें?')){entries=v;save().then(()=>{render();alert('बैकअप वापस आ गया।')})}}catch(_){alert('यह सही बैकअप फाइल नहीं है।')}e.target.value=''};r.readAsText(f)}
+setType('credit');loadSaved();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body></html>
